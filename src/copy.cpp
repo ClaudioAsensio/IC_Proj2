@@ -71,7 +71,7 @@ int main(int argc, char const *argv[])
         }
     
         
-        Mat tmp = image.clone();
+        Mat tmp(image.rows, image.cols, image.type());
         //rotate image angle degrees
         
         //rotate pixel by pixel
@@ -100,7 +100,7 @@ int main(int argc, char const *argv[])
     else if (op=="n")
     {
 
-        Mat tmp = image.clone();
+        Mat tmp(image.rows, image.cols, image.type());
         //negative image
         for (int i = 0; i < image.rows; i++)
         {
@@ -119,7 +119,7 @@ int main(int argc, char const *argv[])
         int value;
         cin>>value;
 
-        Mat tmp = image.clone();
+        Mat tmp(image.rows, image.cols, image.type());
         //lighten or darken image
         for (int i = 0; i < image.rows; i++)
         {
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[])
     else if (op=="c")
     {
         //copy image pixel by pixel
-        Mat tmp = image.clone();
+        Mat tmp(image.rows, image.cols, image.type());
         for (int i = 0; i < image.rows; i++)
         {
             for (int j = 0; j < image.cols; j++)
