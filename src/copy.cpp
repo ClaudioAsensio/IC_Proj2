@@ -34,7 +34,7 @@ int main(int argc, char const *argv[])
 
     if (op=="m")
     {
-        Mat tmp = image.clone();
+        Mat tmp(image.rows, image.cols, image.type());
 
         for (int i = 0; i < image.rows; i++)
         {
