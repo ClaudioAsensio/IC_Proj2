@@ -1,3 +1,0 @@
-/home/hugo/IC/IC_Proj2/src/build/CMakeFiles/copy_img.dir
-/home/hugo/IC/IC_Proj2/src/build/CMakeFiles/edit_cache.dir
-/home/hugo/IC/IC_Proj2/src/build/CMakeFiles/rebuild_cache.dir
