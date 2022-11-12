@@ -32,15 +32,34 @@ int main(int argc, char const *argv[])
     //l->lighten or darken
     //c->copy
 
+    Mat tmp(image.rows, image.cols, image.type());
+    for (int i = 0; i < image.rows; i++)
+    {
+        for (int j = 0; j < image.cols; j++)
+        {
+            tmp.at<Vec3b>(i, j)[0]=image.at<Vec3b>(i, j)[0];
+            tmp.at<Vec3b>(i, j)[1]=image.at<Vec3b>(i, j)[1];
+            tmp.at<Vec3b>(i, j)[2]=image.at<Vec3b>(i, j)[2];
+            // image.at<Vec3b>(i, j)[1] = tmp.at<Vec3b>(i, j)[1];
+            // image.at<Vec3b>(i, j)[2] = tmp.at<Vec3b>(i, j)[2];
+        }
+    }
+    imwrite(destination, image);
+
     if (op=="m")
     {
-        Mat tmp(image.rows, image.cols, image.type());
+        //Mat tmp = image.clone();
+        // Mat tmp(image.rows, image.cols, image.type());
+
 
         for (int i = 0; i < image.rows; i++)
         {
             for (int j = 0; j < image.cols; j++)
             {
 
+                // tmp.at<Vec3b>(i, image.cols - j - 1)[0]=image.at<Vec3b>(i, j)[0];
+                // tmp.at<Vec3b>(i, image.cols - j - 1)[1]=image.at<Vec3b>(i, j)[1];
+                // tmp.at<Vec3b>(i, image.cols - j - 1)[2]=image.at<Vec3b>(i, j)[2];
                 image.at<Vec3b>(i, j)[0] = tmp.at<Vec3b>(i, image.cols - j - 1)[0];
                 image.at<Vec3b>(i, j)[1] = tmp.at<Vec3b>(i, image.cols - j - 1)[1];
                 image.at<Vec3b>(i, j)[2] = tmp.at<Vec3b>(i, image.cols - j - 1)[2];
@@ -71,7 +90,7 @@ int main(int argc, char const *argv[])
         }
     
         
-        Mat tmp(image.rows, image.cols, image.type());
+        // Mat tmp(image.rows, image.cols, image.type());
         //rotate image angle degrees
         
         //rotate pixel by pixel
@@ -100,7 +119,7 @@ int main(int argc, char const *argv[])
     else if (op=="n")
     {
 
-        Mat tmp(image.rows, image.cols, image.type());
+        // Mat tmp(image.rows, image.cols, image.type());
         //negative image
         for (int i = 0; i < image.rows; i++)
         {
@@ -119,7 +138,7 @@ int main(int argc, char const *argv[])
         int value;
         cin>>value;
 
-        Mat tmp(image.rows, image.cols, image.type());
+        // Mat tmp(image.rows, image.cols, image.type());
         //lighten or darken image
         for (int i = 0; i < image.rows; i++)
         {
