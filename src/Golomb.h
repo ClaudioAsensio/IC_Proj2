@@ -29,12 +29,17 @@ class Golomb {
             // m is a power of 2
             if((m != 0) && ((m & (m - 1)) == 0)) {
                 // parse r to binary
+                std::cout << "r: " << r << std::endl;
                 int aux = r;
-                while(aux != 0) {
-                    rem += (aux % 2 == 0 ? '0' : '1');
-                    aux /= 2;
+                if(aux == 0) {
+                    rem += "0";
+                } else {
+                    while(aux != 0) {
+                        rem += (aux % 2 == 0 ? '0' : '1');
+                        aux /= 2;
+                    }
                 }
-                std::cout << "[Binary]: " << rem << std::endl;
+
             } else {    // if m is not a power of 2
                 int b = std::ceil(std::log2(m));
                 int word_length;
@@ -60,16 +65,18 @@ class Golomb {
                     word_length--;
                 }
 
-                std::reverse(rem.begin(), rem.end());
 
             }
+
+            std::reverse(rem.begin(), rem.end());
+            std::cout << "[Binary]: " << rem << std::endl;
 
             // unary part
             // m is a power of 2
             std::string quo = "";
             for(int i = 0; i < q; i++)
-                quo += "0";
-            quo += "1";
+                quo += "1";
+            quo += "0";
             std::cout << "[Unary]: " << quo << std::endl;
 
             return quo + rem;
@@ -80,22 +87,18 @@ class Golomb {
             int b = std::ceil(std::log2(m));
             std::string unary_string = "";
             int j = 0;
-            // if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
-                // read unary part until first 1
-                while(true) {
-                    if(codeword[j++] == '1')
-                        break;
-                    unary_string += "0";                
-                }
-            // } else {
-            //     // read unary part until first 0
-            //     while(true) {
-            //         if(codeword[j++] == '0')
-            //             break;
-            //         unary_string += "1";                
-            //     }
-            // }
+
+            // unary part
+            // read bits until first '0'
+            while(true) {
+                if(codeword[j++] == '0')
+                    break;
+                unary_string += "1";                
+            }
+
             int q = unary_string.length();
+
+            std::cout << "q: " << q << std::endl;
             
             // binary part
             int remaining_codeword_bits = codeword.length() - 1 - q;
@@ -107,7 +110,7 @@ class Golomb {
 
             int res;
             // if m is a power of two
-            if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
+            if((m != 0) && ((m & (m - 1)) == 0)) {
                 int decimal_value = 0;
                 for(int i = remaining_codeword_bits-1; i >= 0; i--) {
                     decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
@@ -115,6 +118,7 @@ class Golomb {
 
                 int r = decimal_value;
 
+                std::cout << "decimal value " << decimal_value << std::endl;
                 
                 res = q*m + r;
 
@@ -146,10 +150,11 @@ class Golomb {
             }
 
             std::cout << res << std::endl;
+
             if(res % 2 == 0) {
-                return res / 2 * -1;
+                return -res/2;
             } else {
-                return (res-1) / 2;
+                return (res-1)/2;
             }
         }
 };
