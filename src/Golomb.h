@@ -9,80 +9,92 @@ class Golomb {
     public:
 
         //encoding an integer into string of bits
-        std::string encodeInteger(int n, int m) {
+        std::string encodeInteger(int x, int m) {
+
+            // map values to handle negative numbers
+            int n;
+            if(x >= 0) {
+                n = 2*x+1;
+            } else {
+                n = 2*(-x);
+            }
+
+            std::cout << "Mapped to: " << n << std::endl;
+
             int q = std::floor(n/m);
             int r = n % m;
 
             // binary part
-            int b = std::ceil(std::log2(m));
-            int k = std::pow(2, b) - m;
-
-            
-            int num_bin_bits;   // number of bits to binary part
-            int value;          // value to be encoded on binary part
-
-            if(r < pow(2, b) - m) {
-                num_bin_bits = b - 1;
-                value = r;
-            } else  {
-                num_bin_bits = b;
-                value = r + pow(2, b) - m;
-            }
-            
             std::string rem = "";
-            int num_bits = num_bin_bits;
+            // m is a power of 2
+            if((m != 0) && ((m & (m - 1)) == 0)) {
+                // parse r to binary
+                int aux = r;
+                while(aux != 0) {
+                    rem += (aux % 2 == 0 ? '0' : '1');
+                    aux /= 2;
+                }
+                std::cout << "[Binary]: " << rem << std::endl;
+            } else {    // if m is not a power of 2
+                int b = std::ceil(std::log2(m));
+                int word_length;
+                int value;  // value to be encoded on binary part
 
-            while(value != 0) {
-                rem += (value % 2 == 0 ? '0' : '1');
-                value /= 2;
-                num_bits--;
+                // Encode the first 2^b − m values of r using the first 2^b − m binary codewords of b − 1 bits.
+                if(r < pow(2, b) - m) {
+                    word_length = b-1;
+                    value = r;
+                } else {    // Encode the remainder values of r by coding the number r + 2^b − m in binary codewords of b bits.
+                    word_length = b;
+                    value = r + pow(2, b) - m;
+                }
+
+                while(value != 0) {
+                    rem += (value % 2 == 0 ? '0' : '1');
+                    value /= 2;
+                    word_length--;
+                }
+
+                while(word_length != 0) {
+                    rem += '0';
+                    word_length--;
+                }
+
+                std::reverse(rem.begin(), rem.end());
+
             }
 
-            while(num_bits != 0) {
-                rem += '0';
-                num_bits--;
-            }
-
-            std::reverse(rem.begin(), rem.end());
-
-            // encoding unary part
-            //if m is power of 2
+            // unary part
+            // m is a power of 2
             std::string quo = "";
-            int size = num_bits + 1;
-            if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
-                for(int i = 0; i < q; i++) {
-                    quo += "0";
-                }
-                quo += "1";
-            } else {
-                for(int i = 0; i < q; i++) {
-                    quo += "1";
-                }
+            for(int i = 0; i < q; i++)
                 quo += "0";
-            }
+            quo += "1";
+            std::cout << "[Unary]: " << quo << std::endl;
 
             return quo + rem;
+
         }
 
         int decodeInteger(std::string codeword, int m) {
             int b = std::ceil(std::log2(m));
             std::string unary_string = "";
             int j = 0;
-            if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
+            // if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
                 // read unary part until first 1
                 while(true) {
                     if(codeword[j++] == '1')
                         break;
                     unary_string += "0";                
                 }
-            } else {
-                // read unary part until first 0
-                while(true) {
-                    if(codeword[j++] == '0')
-                        break;
-                    unary_string += "1";                
-                }
-            }
+            // } else {
+            //     // read unary part until first 0
+            //     while(true) {
+            //         if(codeword[j++] == '0')
+            //             break;
+            //         unary_string += "1";                
+            //     }
+            // }
             int q = unary_string.length();
             
             // binary part
@@ -93,6 +105,7 @@ class Golomb {
                 binary[i-j] = codeword[i];
             }
 
+            int res;
             // if m is a power of two
             if((m != 0) && (std::ceil(std::log2(m)) == std::floor(std::log2(m)))) {
                 int decimal_value = 0;
@@ -102,7 +115,8 @@ class Golomb {
 
                 int r = decimal_value;
 
-                return q*m + r;
+                
+                res = q*m + r;
 
             } else {
                 int threshold = std::pow(2, b) - m;
@@ -117,7 +131,7 @@ class Golomb {
                     }
                     // std::cout << decimal_value << std::endl;
                     int r = decimal_value - threshold;
-                    return q*m + r;
+                    res =  q*m + r;
                 } else {
                     // binary to decimal of the remaining bits
                     int decimal_value = 0;
@@ -125,12 +139,17 @@ class Golomb {
                         decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
                     }
                     int r = decimal_value;
-                    return q*m + r;
+                    res = q*m + r;
                 }
 
 
             }
 
-            return 0;
+            std::cout << res << std::endl;
+            if(res % 2 == 0) {
+                return res / 2 * -1;
+            } else {
+                return (res-1) / 2;
+            }
         }
 };
