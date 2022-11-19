@@ -17,5 +17,8 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 add_executable (copy_img copy.cpp)
 target_link_libraries (copy_img ${OpenCV_LIBS})
 
+add_executable (effects effects.cpp)
+target_link_libraries (effects ${OpenCV_LIBS})
+
 add_executable (testGolomb testGolomb.cpp)
 target_link_libraries (testGolomb ${OpenCV_LIBS})
