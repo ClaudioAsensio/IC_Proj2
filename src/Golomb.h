@@ -21,13 +21,18 @@ class Golomb {
     public:
 
         //encoding an integer into string of bits
-        std::string encodeInteger(int x, int m) {
+        std::string encodeInteger(int n, int m) {
+            // int n;
+            // if(x >= 0) {
+            //     n = 2*x+1;
+            // } else {
+            //     n = 2*(-x);
+            // }
 
-            int n;
-            if(x >= 0) {
-                n = 2*x+1;
-            } else {
-                n = 2*(-x);
+            std::string signal_bit = "0";
+            if(n < 0) {
+                signal_bit = "1";
+                n = -n;
             }
 
             std::cout << "Value of n: " << n << std::endl;
@@ -51,6 +56,10 @@ class Golomb {
                         rem += (aux % 2 == 0 ? '0' : '1');
                         aux /= 2;
                     }
+                }
+                // add '0' when rem length is less than log2(m)
+                while(rem.length() < std::log2(m)) {
+                    rem += "0";
                 }
 
             } else {    // if m is not a power of 2
@@ -91,9 +100,9 @@ class Golomb {
                 quo += "1";
             quo += "0";
             std::cout << "[Unary]: " << quo << std::endl;
+            std::cout << "[Signal Bit]: " << signal_bit << std::endl;
 
-            // return signal_bit + quo + rem;
-            return quo + rem;
+            return quo + rem + signal_bit;
 
         }
 
@@ -110,35 +119,41 @@ class Golomb {
                 unary_string += "1";                
             }
 
+            std::cout << "Unary: " << unary_string << std::endl;
+
             int q = unary_string.length();
 
            
             // binary part
-            int remaining_codeword_bits = codeword.length() - q - 1;
+            int remaining_codeword_bits = codeword.length() - q - 2;
+            std::cout << "Remaining bits: " << remaining_codeword_bits << std::endl;
 
-            char binary[b];
-            for(int i = j; i < codeword.length(); i++) {
-                binary[i-j] = codeword[i];
+            // read the binary part
+            createPossibleBinaryTable(m);
+            std::map<int, std::string> table = getTable();    // get table of possible binary values
+            
+            std::string binary = "";
+
+            for(int i = 0; i < remaining_codeword_bits; i++) {
+                binary += codeword[j++];
             }
 
+            std::cout << "Binary: " << binary << std::endl;
+            
             int res;
-            // if m is a power of two
+            // if m is power of two
             if((m != 0) && ((m & (m - 1)) == 0)) {
+                // convert binary to decimal
                 int decimal_value = 0;
-                for(int i = remaining_codeword_bits-1; i >= 0; i--) {
-                    decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
+                for(int i = 0; i < binary.length(); i++) {
+                    if(binary[i] == '1')
+                        decimal_value += pow(2, binary.length()-i-1);
                 }
 
-                int r = decimal_value;
-
-                // std::cout << "decimal value " << decimal_value << std::endl;
-                
-                res = q*m + r;
-
+                res = q*m + decimal_value;
             } else {
                 int threshold = std::pow(2, b) - m;
-                // std::cout << threshold << std::endl;
-                // std::cout << remaining_codeword_bits << std::endl;
+                int decimal_value = 0;
                 if(remaining_codeword_bits >= threshold) {
 
                     // binary to decimal of the remaining bits
@@ -158,21 +173,13 @@ class Golomb {
                     int r = decimal_value;
                     res = q*m + r;
                 }
-
-
             }
 
-            // if(signal_bit == '3')   res = res * (-1);
-
-            std::cout << res << std::endl;
-
-            // return res;
-
-            if(res % 2 == 0) {
-                return -res/2;
-            } else {
-                return (res-1)/2;
+            if(codeword[codeword.length()-1] == '1') {
+                res = -res;
             }
+
+            return res;
         }
 
         void createPossibleBinaryTable(int m) {
@@ -189,7 +196,12 @@ class Golomb {
                             aux /= 2;
                         }
                     }
-                    
+                    if(bin.length() < std::ceil(std::log2(m))) {
+                        int diff = std::ceil(std::log2(m)) - bin.length();
+                        for(int j = 0; j < diff; j++) {
+                            bin += "0";
+                        }
+                    }
                     std::reverse(bin.begin(), bin.end());
                     table.insert(std::pair<int, std::string>(i, bin));
                 }

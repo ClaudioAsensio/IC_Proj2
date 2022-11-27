@@ -24,9 +24,8 @@ int main(int argc, char const *argv[])
     } else if (strcmp(argv[1], "-d") == 0) {
         cout << "Starting to decode..." << endl;
         string filename = argv[2];
-        int rows = 512;
-        int cols = 512;
-        codec.decodeImage(filename, rows, cols);
+        Mat image = imread(argv[3], IMREAD_COLOR);
+        codec.decodeImage(filename);
     } else {
         cout << "Invalid option." << endl;
         return -1;

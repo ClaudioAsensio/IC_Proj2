@@ -39,18 +39,7 @@ int main(int argc, char const *argv[])
         int decoded_value = g.decodeInteger(argv[2], m);
         cout << decoded_value << endl;
 
-    }
-
-    // } else if(strcmp(argv[2], "-d") == 0) {    // calling Integer encoder
-    //     int m = 4;
-    //     if(argc == 5) {
-    //         m = stoi(argv[5]);
-    //     }
-    //     int decoded_value = g.decodeInteger(argv[3], m);
-
-    // }
-
-    
+    }   
 
     return 0;
 }
