@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <map>
 #include <iterator>
+#include "bitstream.h"
 
 
 class Golomb {
@@ -17,8 +18,28 @@ class Golomb {
         size_t buffer_size;
         std::fstream file;
         std::map<int, std::string> table;
+        int m;
+        int b;
+        bitstream Gfile; 
 
     public:
+
+        Golomb(){};
+
+        Golomb(std::string fileName, std::string mode, int mIn) {
+            if (mode != "d" && mode != "e") {
+                std::cout << "ERROR: invalid mode!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            if(mode == "d")
+                Gfile = bitstream(fileName, "r");
+            else
+                Gfile = bitstream(fileName, "w");
+
+            m = mIn;
+            b = ceil(log2(m));
+
+        }
 
         //encoding an integer into string of bits
         std::string encodeInteger(int n, int m) {
@@ -105,6 +126,22 @@ class Golomb {
             return quo + rem + signal_bit;
 
         }
+
+        // void Golomb::encode(int* value) {
+
+        //     int q, r;
+
+        //     unsigned int absolute_value = abs(*value);
+
+        //     q = floor(absolute_value / m); // quociente -> unario
+        //     r = absolute_value % m;  // resto -> binario
+
+        //     // write sign bit (if value is 0, no sign bit is used)
+        //     if(*value < 0)
+        //         Gfile.writeBit(1);
+        //     else if(*value > 0)
+        //         Gfile.writeBit(0);
+        // }
 
         int decodeInteger(std::string codeword, int m) {
             int b = std::ceil(std::log2(m));
@@ -248,4 +285,17 @@ class Golomb {
             return table;
         }
 
+<<<<<<< HEAD
+
+        void close() {
+            for(unsigned char i = Gfile.size(); i < 8; i++) {
+                Gfile.writeBit(0);
+            } 
+            Gfile.close();
+        }
+
+
 };
+=======
+};
+>>>>>>> 1bf15387090e4d6930198806e3057f3e7628887a
