@@ -19,7 +19,8 @@ private:
 
 public:
     //mode = "r" for read, "w" for write
-    
+
+    bitstream(){};
     //constructor
     bitstream(std::string filename, std::string mode){
             mode = mode;
@@ -98,6 +99,10 @@ public:
             writeBit(bit);
         }
     }
+
+    unsigned char size() {
+        return buffer_size;
+    }
     
     
     //close file
@@ -117,4 +122,3 @@ public:
 
 
 #endif
-    

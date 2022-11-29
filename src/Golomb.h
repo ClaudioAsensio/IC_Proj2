@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <map>
 #include <iterator>
-
+#include <memory>
 
 class Golomb {
 
@@ -35,19 +35,19 @@ class Golomb {
                 n = -n;
             }
 
-            std::cout << "Value of n: " << n << std::endl;
+            // std::cout << "Value of n: " << n << std::endl;
 
             int q = std::floor(n/m);
             int r = n % m;
 
-            createPossibleBinaryTable(m);
+            // createPossibleBinaryTable(m);
 
             // binary part
             std::string rem = "";
             // m is a power of 2
             if((m != 0) && ((m & (m - 1)) == 0)) {
                 // parse r to binary
-                std::cout << "r: " << r << std::endl;
+                // std::cout << "r: " << r << std::endl;
                 int aux = r;
                 if(aux == 0) {
                     rem += "0";
@@ -74,6 +74,7 @@ class Golomb {
                 } else {    // Encode the remainder values of r by coding the number r + 2^b − m in binary codewords of b bits.
                     word_length = b;
                     value = r + pow(2, b) - m;
+                    // std::cout << "value: " << value << std::endl;
                 }
 
                 while(value != 0) {
@@ -91,7 +92,7 @@ class Golomb {
             }
 
             std::reverse(rem.begin(), rem.end());
-            std::cout << "[Binary]: " << rem << std::endl;
+            // std::cout << "[Binary]: " << rem << std::endl;
 
             // unary part
             // m is a power of 2
@@ -99,8 +100,8 @@ class Golomb {
             for(int i = 0; i < q; i++)
                 quo += "1";
             quo += "0";
-            std::cout << "[Unary]: " << quo << std::endl;
-            std::cout << "[Signal Bit]: " << signal_bit << std::endl;
+            // std::cout << "[Unary]: " << quo << std::endl;
+            // std::cout << "[Signal Bit]: " << signal_bit << std::endl;
 
             return quo + rem + signal_bit;
 
@@ -119,26 +120,25 @@ class Golomb {
                 unary_string += "1";                
             }
 
-            std::cout << "Unary: " << unary_string << std::endl;
+            // std::cout << "Unary: " << unary_string << std::endl;
 
             int q = unary_string.length();
 
            
             // binary part
             int remaining_codeword_bits = codeword.length() - q - 2;
-            std::cout << "Remaining bits: " << remaining_codeword_bits << std::endl;
+            // std::cout << "Remaining bits: " << remaining_codeword_bits << std::endl;
 
             // read the binary part
             createPossibleBinaryTable(m);
             std::map<int, std::string> table = getTable();    // get table of possible binary values
             
             std::string binary = "";
-
             for(int i = 0; i < remaining_codeword_bits; i++) {
                 binary += codeword[j++];
             }
 
-            std::cout << "Binary: " << binary << std::endl;
+            // std::cout << "Binary: " << binary << std::endl;
             
             int res;
             // if m is power of two
@@ -154,25 +154,16 @@ class Golomb {
             } else {
                 int threshold = std::pow(2, b) - m;
                 int decimal_value = 0;
-                if(remaining_codeword_bits >= threshold) {
-
-                    // binary to decimal of the remaining bits
-                    int decimal_value = 0;
-                    for(int i = remaining_codeword_bits-1; i >= 0; i--) {
-                        decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
-                    }
-                    // std::cout << decimal_value << std::endl;
-                    int r = decimal_value - threshold;
-                    res =  q*m + r;
-                } else {
-                    // binary to decimal of the remaining bits
-                    int decimal_value = 0;
-                    for(int i = remaining_codeword_bits-1; i >= 0; i--) {
-                        decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
-                    }
-                    int r = decimal_value;
-                    res = q*m + r;
+                for(int i = remaining_codeword_bits-1; i >= 0; i--) {
+                    decimal_value += (int(binary[remaining_codeword_bits-1-i])-'0')*std::pow(2, i);
                 }
+                int r;
+                if(decimal_value >= threshold) {
+                    r = decimal_value - threshold;
+                } else {
+                    r = decimal_value;
+                }
+                res = q*m + r;
             }
 
             if(codeword[codeword.length()-1] == '1') {
@@ -183,6 +174,7 @@ class Golomb {
         }
 
         void createPossibleBinaryTable(int m) {
+            std::map<int, std::string> auxTable;
             // if m is power of 2
             if((m != 0) && ((m & (m - 1)) == 0)) {
                 for(int i = 0; i <= m-1; i++) {
@@ -203,7 +195,7 @@ class Golomb {
                         }
                     }
                     std::reverse(bin.begin(), bin.end());
-                    table.insert(std::pair<int, std::string>(i, bin));
+                    auxTable.insert(std::pair<int, std::string>(i, bin));
                 }
             } else {
                 for(int i = 0; i <= m-1; i++) {
@@ -232,20 +224,24 @@ class Golomb {
                         word_length--;
                     }
                     std::reverse(bin.begin(), bin.end());
-                    table.insert(std::pair<int, std::string>(i, bin));
+                    auxTable.insert(std::pair<int, std::string>(i, bin));
                 }
             }
-            std::map<int, std::string>::iterator itr;
-            std::cout << "---------" << std::endl;
-            for(itr = table.begin(); itr != table.end(); ++itr) {
-                std::cout << '\t' << itr->first << '\t' << itr-> second << '\n';
-            }
-            std::cout << "---------" << std::endl;
-
+            setTable(auxTable);
         }
 
         std::map<int, std::string> getTable() {
             return table;
+        }
+
+        void setTable(std::map<int, std::string> t) {
+            table = std::move(t);
+            // std::map<int, std::string>::iterator itr;
+            // std::cout << "---------" << std::endl;
+            // for(itr = table.begin(); itr != table.end(); ++itr) {
+            //     std::cout << '\t' << itr->first << '\t' << itr-> second << '\n';
+            // }
+            // std::cout << "---------" << std::endl;
         }
 
 };

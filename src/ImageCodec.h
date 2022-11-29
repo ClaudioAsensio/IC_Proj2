@@ -23,22 +23,27 @@ class ImageCodec {
 
             Golomb golomb;
 
-            // int m = 4;
-            int sum = 0;
-            int cntr = 0;
-            vector<int>b;
-            vector<int>g;
-            vector<int>r;
-            for(int row = 0; row < image.rows; row++) {
-                for(int col = 0; col < image.cols; col++) {
-                    b.push_back(image.at<Vec3b>(row, col)[0]);
-                    g.push_back(image.at<Vec3b>(row, col)[1]);
-                    r.push_back(image.at<Vec3b>(row, col)[2]);
-                    cntr++;
-                }
-            }
+            int m_frequency = 50;
 
-            int m = getIdealM(b, g, r);
+            // vector<int>b;
+            // vector<int>g;
+            // vector<int>r;
+            // for(int row = 0; row < image.rows; row++) {
+            //     for(int col = 0; col < image.cols; col++) {
+            //         if(row == 0 || col == 0) {
+            //             b.push_back(abs(image.at<Vec3b>(row, col)[0]));
+            //             g.push_back(abs(image.at<Vec3b>(row, col)[1]));
+            //             r.push_back(abs(image.at<Vec3b>(row, col)[2]));
+            //         } else {
+            //             b.push_back(abs(image.at<Vec3b>(row, col)[0] - predictorJPEG( image.at<Vec3b>(row, col - 1)[0], image.at<Vec3b>(row - 1, col)[0], image.at<Vec3b>(row - 1, col - 1)[0])));
+            //             g.push_back(abs(image.at<Vec3b>(row, col)[1] - predictorJPEG( image.at<Vec3b>(row, col - 1)[1], image.at<Vec3b>(row - 1, col)[1], image.at<Vec3b>(row - 1, col - 1)[1])));
+            //             r.push_back(abs(image.at<Vec3b>(row, col)[2] - predictorJPEG( image.at<Vec3b>(row, col - 1)[2], image.at<Vec3b>(row - 1, col)[2], image.at<Vec3b>(row - 1, col - 1)[2])));
+            //         }
+            //     }
+            // }
+
+            // int m = getIdealM(b, g, r);
+            int m = 4;
 
             golomb.createPossibleBinaryTable(m);
 
@@ -63,25 +68,53 @@ class ImageCodec {
             }
             bit_stream.writeNBits(enc_rows, encoded_rows.size());
             bit_stream.writeNBits(enc_cols, encoded_cols.size());
-
+            
+            int encoded_values = 0;
+            vector<int>b;
+            vector<int>g;
+            vector<int>r;
             // iterate over the image lines
             for(int row = 0; row < image.rows; row++) {
                 // iterate over the image columns
                 for(int col = 0; col < image.cols; col++) {
+                    // calculate new optimal m parameter
+                    
+                    if(encoded_values % m_frequency == 0 && encoded_values != 0) {
+                        m = getIdealM(b, g, r);
+
+                        while(!b.empty()) {
+                            b.pop_back();
+                        }
+                        while(!g.empty()) {
+                            g.pop_back();
+                        }
+                        while(!r.empty()) {
+                            r.pop_back();
+                        }
+                    }
+
                     string encoded_value;
-                    if(row == 0 || col < 1) {
+                    if(row == 0 || col == 0) {
                         // apply Golomb code to each pixel value;
-                        encoded_value = golomb.encodeInteger(image.at<Vec3b>(row, col)[0], m);       // using m = 4
+                        encoded_value = golomb.encodeInteger(image.at<Vec3b>(row, col)[0], m);
                         encoded_value += golomb.encodeInteger(image.at<Vec3b>(row, col)[1], m);
                         encoded_value += golomb.encodeInteger(image.at<Vec3b>(row, col)[2], m);
+                        b.push_back(abs(image.at<Vec3b>(row, col)[0]));
+                        g.push_back(abs(image.at<Vec3b>(row, col)[1]));
+                        r.push_back(abs(image.at<Vec3b>(row, col)[2]));
                     } else {
                         // apply Golomb code to the prediction error
                         int p0 = predictorJPEG( image.at<Vec3b>(row, col - 1)[0], image.at<Vec3b>(row - 1, col)[0], image.at<Vec3b>(row - 1, col - 1)[0]);
                         int p1 = predictorJPEG( image.at<Vec3b>(row, col - 1)[1], image.at<Vec3b>(row - 1, col)[1], image.at<Vec3b>(row - 1, col - 1)[1]);
                         int p2 = predictorJPEG( image.at<Vec3b>(row, col - 1)[2], image.at<Vec3b>(row - 1, col)[2], image.at<Vec3b>(row - 1, col - 1)[2]);
-                        encoded_value = golomb.encodeInteger(image.at<Vec3b>(row, col)[0] - p0, m);       // using m = 4
+                        encoded_value = golomb.encodeInteger(image.at<Vec3b>(row, col)[0] - p0, m);
                         encoded_value += golomb.encodeInteger(image.at<Vec3b>(row, col)[1] - p1, m);
                         encoded_value += golomb.encodeInteger(image.at<Vec3b>(row, col)[2] - p2, m);
+
+                        b.push_back(abs(image.at<Vec3b>(row, col)[0] - p0));
+                        g.push_back(abs(image.at<Vec3b>(row, col)[1] - p1));
+                        r.push_back(abs(image.at<Vec3b>(row, col)[2] - p2));
+
                     }
 
                     int encoded[encoded_value.size()];
@@ -89,16 +122,18 @@ class ImageCodec {
                         encoded[i] = int(encoded_value[i])-'0';
                     }
                     bit_stream.writeNBits(encoded, encoded_value.size());
+
+                    encoded_values++;
                 }
             }
             bit_stream.close();
-
-            cout << "M: " << m << endl;
         }
 
 
         void decodeImage(string filename) {
             Golomb golomb;
+
+            int m_frequency = 50;
             
             int m = 4;
             golomb.createPossibleBinaryTable(m);
@@ -116,38 +151,54 @@ class ImageCodec {
             }
             cout << "Calculated" << endl;
 
-            // group encoded data into vector
-            vector<int> stored_values;
             int idx = 0;                            // keeps track of where we are on the string
             bool residual_bits_flag = false;
             
             int rows;
             int cols;
 
-            int current_row = -1; 
-            int current_col = 0;
             int num_decoded_values = 0;
+
+            int current_row = 0;
+            int current_col = 0;
+            
+            Mat new_image;
+
+            vector<int> b;
+            vector<int> g;
+            vector<int> r;
+
+            int num_bgr_decoded = 0;
+
             while(idx < bits_string.length()-1 && !residual_bits_flag) {
-                if(idx % rows == 0) {
-                    current_row++;
-                }
-                current_col = idx % rows;
+                // calculate new optimal m parameter
+                if(num_bgr_decoded == m_frequency) {
+                    m = getIdealM(b, g, r);
+                    golomb.createPossibleBinaryTable(m);
 
-                std::cout << "bits_string length: " << bits_string.length() << std::endl;
-                if(bits_string.length() - idx < 20) {
-                    std::cout << "----missing bits----" << std::endl;
+                    while(!b.empty()) {
+                        b.pop_back();
+                    }
+                    while(!g.empty()) {
+                        g.pop_back();
+                    }
+                    while(!r.empty()) {
+                        r.pop_back();
+                    }
+                    num_bgr_decoded = 0;
+                }
+
+                if(bits_string.length() - idx < 8) {
+                    int cntr_residual = 0;
                     for(int i = idx; i < bits_string.length(); i++) {
-                        std::cout << bits_string[i];
+                        if(bits_string[i] == '1')
+                            cntr_residual++;
                     }
-                    std::cout << "--------" << std::endl;
-                    if(bits_string[idx] == '0' && bits_string[idx+1] == '0' && bits_string[idx+2] == '0') {
-                        std::cout << "bits a mais -> parar loop" << std::endl;
+                    if(cntr_residual > 0)
                         residual_bits_flag = true;
-                    }
+
                 }
 
-
-                std::cout << "idx: " << idx << std::endl;
                 if(!residual_bits_flag) {
                     // read unary string
                     char value;
@@ -192,74 +243,71 @@ class ImageCodec {
                         }
                     }
 
-                    std::cout << "--------------" << std::endl;
-
                     // signal bit
                     char signal_bit = bits_string[idx++];
-                    std::cout << "Signal bit: " << signal_bit << std::endl;
 
-                    std::cout << "res: " << unary + "0" + binary + signal_bit << std::endl;
                     int res = golomb.decodeInteger(unary + "0" + binary + signal_bit, m);
 
                     if(num_decoded_values == 0) {
                         m = res;
+                        golomb.createPossibleBinaryTable(m);
                     } else if(num_decoded_values == 1) {
                         rows = res;
                     } else if(num_decoded_values == 2) {
                         cols = res;
+                        new_image.create(rows, cols, CV_8UC3);
                     } else {
-                        stored_values.push_back(res);
-                        std::cout << "Value: " << res << std::endl;
+
+                        // se estiver na primeira linha ou primeira coluna
+                        if(current_row == 0 || current_col == 0) {
+                            if(num_decoded_values % 3 == 0) {
+                                b.push_back((abs(res)));
+                                new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res);
+                            } else if(num_decoded_values % 3 == 1) {
+                                g.push_back((abs(res)));
+                                new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res);
+                            } else if(num_decoded_values % 3 == 2) {
+                                r.push_back((abs(res)));
+                                new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res);
+                                
+                                num_bgr_decoded++;
+
+                                current_col++;
+                                if(current_col == cols) {
+                                    current_row++;
+                                    current_col = 0;
+                                }
+                            }
+                        } else {
+                            if(num_decoded_values % 3 == 0) {
+                                b.push_back((abs(res)));
+                                new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[0], new_image.at<Vec3b>(current_row-1, current_col)[0], new_image.at<Vec3b>(current_row-1, current_col-1)[0]));
+                            } else if(num_decoded_values % 3 == 1) {
+                                g.push_back((abs(res )));
+                                new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[1], new_image.at<Vec3b>(current_row-1, current_col)[1], new_image.at<Vec3b>(current_row-1, current_col-1)[1]));
+                            } else if(num_decoded_values % 3 == 2) {
+                                r.push_back((abs(res )));
+                                new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[2], new_image.at<Vec3b>(current_row-1, current_col)[2], new_image.at<Vec3b>(current_row-1, current_col-1)[2]));
+                                
+                                num_bgr_decoded++;
+
+                                current_col++;
+                                if(current_col == cols) {
+                                    current_row++;
+                                    current_col = 0;
+                                }
+                            }
+
+                        }
+
                     }
-                    std::cout << "--------------" << std::endl;
                     num_decoded_values++;
                 }
 
-                cout << "M: " << m << endl;
                                
             }
-
-            int rgb_idx = 0;
-            vector<uchar> stored_values_0;
-            vector<uchar> stored_values_1;
-            vector<uchar> stored_values_2;
-            for(int i = 0; i < stored_values.size(); i++) {
-                if(rgb_idx == 3) {
-                    rgb_idx = 0;
-                }
-                if(rgb_idx == 0) {
-                    stored_values_0.push_back(u_char(stored_values[i]));
-                } else if(rgb_idx == 1) {
-                    stored_values_1.push_back(u_char(stored_values[i]));
-                } else if(rgb_idx == 2) {
-                    stored_values_2.push_back(u_char(stored_values[i]));
-                }
-                rgb_idx++;
-            }
-            
-            // create new image
-            Mat new_image(rows, cols, CV_8UC3);
-            
-            int k = 0;
-            for(int row = 0; row < rows; row++) {
-                for(int col = 0; col < cols; col++) {
-                    if(row == 0 || col == 0) {
-                        new_image.at<Vec3b>(row, col)[0] = stored_values_0[k];
-                        new_image.at<Vec3b>(row, col)[1] = stored_values_1[k];
-                        new_image.at<Vec3b>(row, col)[2] = stored_values_2[k];
-                    } else {
-                        int p0 = predictorJPEG(new_image.at<Vec3b>(row, col-1)[0], new_image.at<Vec3b>(row-1, col)[0], new_image.at<Vec3b>(row-1, col-1)[0]);
-                        int p1 = predictorJPEG(new_image.at<Vec3b>(row, col-1)[1], new_image.at<Vec3b>(row-1, col)[1], new_image.at<Vec3b>(row-1, col-1)[1]);
-                        int p2 = predictorJPEG(new_image.at<Vec3b>(row, col-1)[2], new_image.at<Vec3b>(row-1, col)[2], new_image.at<Vec3b>(row-1, col-1)[2]);
-                        new_image.at<Vec3b>(row, col)[0] = p0 + stored_values_0[k];
-                        new_image.at<Vec3b>(row, col)[1] = p1 + stored_values_1[k];
-                        new_image.at<Vec3b>(row, col)[2] = p2 + stored_values_2[k];
-                    }
-                    k++;
-                }
-            }
-
         
+            cout << "M: " << m << endl;
             cout << "Writing image" << endl;
             imwrite("new_image.ppm", new_image);
 
