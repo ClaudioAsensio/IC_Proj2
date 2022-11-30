@@ -23,7 +23,7 @@ class ImageCodec {
 
             Golomb golomb;
 
-            int m_frequency = 50;
+            int m_frequency = 30;
 
             // vector<int>b;
             // vector<int>g;
@@ -133,7 +133,7 @@ class ImageCodec {
         void decodeImage(string filename) {
             Golomb golomb;
 
-            int m_frequency = 50;
+            int m_frequency = 30;
             
             int m = 4;
             golomb.createPossibleBinaryTable(m);
@@ -306,8 +306,7 @@ class ImageCodec {
 
                                
             }
-        
-            cout << "M: " << m << endl;
+
             cout << "Writing image" << endl;
             imwrite("new_image.ppm", new_image);
 
@@ -338,7 +337,10 @@ class ImageCodec {
                 average += i.first * ((double)i.second / samples);
             }
 
-            return ceil(-1/log2(average / (average+1)));
+            int res = ceil(-1/log2(average / (average+1)));
+            if(res == 0) res = 1;
+
+            return res;
         }
 
 };

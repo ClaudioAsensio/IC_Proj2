@@ -44,12 +44,6 @@ class Golomb {
 
         //encoding an integer into string of bits
         std::string encodeInteger(int n, int m) {
-            // int n;
-            // if(x >= 0) {
-            //     n = 2*x+1;
-            // } else {
-            //     n = 2*(-x);
-            // }
 
             std::string signal_bit = "0";
             if(n < 0) {
@@ -57,12 +51,8 @@ class Golomb {
                 n = -n;
             }
 
-            // std::cout << "Value of n: " << n << std::endl;
-
             int q = std::floor(n/m);
             int r = n % m;
-
-            // createPossibleBinaryTable(m);
 
             // binary part
             std::string rem = "";
@@ -129,22 +119,6 @@ class Golomb {
 
         }
 
-        // void Golomb::encode(int* value) {
-
-        //     int q, r;
-
-        //     unsigned int absolute_value = abs(*value);
-
-        //     q = floor(absolute_value / m); // quociente -> unario
-        //     r = absolute_value % m;  // resto -> binario
-
-        //     // write sign bit (if value is 0, no sign bit is used)
-        //     if(*value < 0)
-        //         Gfile.writeBit(1);
-        //     else if(*value > 0)
-        //         Gfile.writeBit(0);
-        // }
-
         int decodeInteger(std::string codeword, int m) {
             int b = std::ceil(std::log2(m));
             std::string unary_string = "";
@@ -203,6 +177,8 @@ class Golomb {
                 }
                 res = q*m + r;
             }
+
+            // std::cout << "Signal bit" << codeword[codeword.length()-1] << std::endl;
 
             if(codeword[codeword.length()-1] == '1') {
                 res = -res;
