@@ -25,3 +25,6 @@ target_link_libraries (testGolomb ${OpenCV_LIBS})
 
 add_executable (test_image_codec test_image_codec.cpp)
 target_link_libraries (test_image_codec ${OpenCV_LIBS})
+
+add_executable (audio_codec main.cpp)
+target_link_libraries (audio_codec sndfile)
