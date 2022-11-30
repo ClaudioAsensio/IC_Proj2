@@ -16,7 +16,6 @@ class AudioCodec {
         string fileName;
         unsigned char mode;
         int m;
-        Golomb* g;
 
     public:
         AudioCodec(){}
@@ -33,7 +32,6 @@ class AudioCodec {
         }
 
         //read audio file and return a vector of samples
-
         vector<short> readAudioFile(){
             cout << "Audio file name: " << fileName << endl;
 
@@ -52,242 +50,366 @@ class AudioCodec {
             return samples;
         }
 
-        //predictor function receives a vector of samples and returns a vector 
+        // //predictor function receives a vector of samples and returns a vector 
 
 
-        vector<short >predictor(){
-            vector<short> samples = readAudioFile();
-            vector<short> predicted;
-            int predictedSample;
-            //formula u = 3*sample[2] - 3*sample[1] + sample[0]
-            //real = samples[i]
-            predicted.push_back(samples[0]);
-            predicted.push_back(samples[1]);
-            predicted.push_back(samples[2]);
-            //for to iterate over the vector of samples
-                for (int i = 0; i < samples.size(); i++){
-                    int u=3*samples[i-1]-3*samples[i-2]+samples[i-3];
-                    predictedSample = u;
-                    predicted.push_back(predictedSample);
-                }
-            return predicted;
+        // vector<short >predictor(){
+        //     vector<short> samples = readAudioFile();
+        //     vector<short> predicted;
+        //     int predictedSample;
+        //     //formula u = 3*sample[2] - 3*sample[1] + sample[0]
+        //     //real = samples[i]
+        //     predicted.push_back(samples[0]);
+        //     predicted.push_back(samples[1]);
+        //     predicted.push_back(samples[2]);
+        //     //for to iterate over the vector of samples
+        //         for (int i = 0; i < samples.size(); i++){
+        //             int u=3*samples[i-1]-3*samples[i-2]+samples[i-3];
+        //             predictedSample = u;
+        //             predicted.push_back(predictedSample);
+        //         }
+        //     return predicted;
 
-        }
+        // }
        
         bool compress () {
-            vector<short> samples = readAudioFile();
+            // vector<short> samples = readAudioFile();
 
-            cout << "start encoding..." << endl;
+            // cout << "start encoding..." << endl;
 
-            if(!mode) return 1;
-            AudioFile<float> input_audio(fileName);
-            int channels = input_audio.getNumChannels();
-            int samples_per_channel = input_audio.getNumSamplesPerChannel();
-            int sample_rate = input_audio.getSampleRate();
+            // if(!mode) return 1;
+            // AudioFile<float> input_audio(fileName);
+            // int channels = input_audio.getNumChannels();
+            // int samples_per_channel = input_audio.getNumSamplesPerChannel();
+            // int sample_rate = input_audio.getSampleRate();
             // Golomb
             // m = 0;
-            g = new Golomb("fileCompressed.bin", "e",m);
-            bitstream b = bitstream("fileCompressed.bin", "w");
+            // g = new Golomb("fileCompressed.bin", "e",m);
 
-            g -> encodeInteger(m,m);
-            g -> encodeInteger(channels,m);
-            g -> encodeInteger(samples_per_channel,m);
-            g -> encodeInteger(sample_rate,m);
-            //encode prediction array
-            vector<short> prediction = predictor();
-            cout<<"prediction size: "<<prediction.size()<<endl;
-            string encoded_data;
-            for (int i = 0; i < prediction.size(); i++){
-                
-                encoded_data = (g->encodeInteger(samples[i]-prediction[i],m));
-                cout<<"encoded data size: "<<encoded_data.size()<<endl;
-                int encoded_d[encoded_data.size()];
-                cout<<"debug"<<endl;
-                for (int i = 0; i < encoded_data.size(); i++)
-                {
-                    encoded_d[i]=int(encoded_data[i])-'0';
-                }
-                
-                b.writeNBits(encoded_d,encoded_data.size());
+
+            // g.encodeInteger(m,m);
+            // g.encodeInteger(channels,m);
+            // g.encodeInteger(samples_per_channel,m);
+            // g.encodeInteger(sample_rate,m);
+
+            cout << "Audio file name: " << fileName << endl;
+
+            SndfileHandle sndFile { "sample01.wav" };
+            if (sndFile.error()) {
+                cout << "Error: " << sndFile.strError() << endl;
+                exit(EXIT_FAILURE);
             }
+
+            size_t nFrames;
+	        vector<short> samples(sndFile.frames() * sndFile.channels());
+
+            nFrames = sndFile.readf(samples.data(), sndFile.frames());
+            samples.resize(nFrames * sndFile.channels());
+
+            int m_frequency = 50;
+
+            Golomb g;
+
+            bitstream bit_stream("fileCompressed", "w");
+
+            // encoding header
+
+            string encoded_m = g.encodeInteger(m, 100);
+            int enc_m[encoded_m.length()];
+            for(int i = 0; i < encoded_m.length(); i++) {
+                enc_m[i] = int(encoded_m[i]) - '0';
+            }
+            bit_stream.writeNBits(enc_m, encoded_m.length());
+
+            string encoded_channels = g.encodeInteger(sndFile.channels(), 100);
+            int enc_channels[encoded_channels.length()];
+            for(int i = 0; i < encoded_channels.length(); i++) {
+                enc_channels[i] = int(encoded_channels[i]) - '0';
+            }
+            bit_stream.writeNBits(enc_channels, encoded_channels.length());
+
+            string encoded_rate = g.encodeInteger(sndFile.channels(), 100);
+            int enc_rate[encoded_rate.length()];
+            for(int i = 0; i < encoded_rate.length(); i++) {
+                enc_rate[i] = int(encoded_rate[i]) - '0';
+            }
+            bit_stream.writeNBits(enc_rate, encoded_rate.length());
+
+            // encoding data
+
+            vector<short> left;
+            vector<short> right;
+            for(int i = 0; i < samples.size(); i++) {
+                if(i % 2 == 0) {
+                    left.push_back(samples[i]);
+                } else {
+                    right.push_back(samples[i]);
+                }
+            }
+
+            vector<short> l;
+            vector<short> r;
+
+            vector<short> idealm_l;
+            vector<short> idealm_r;
+
+            string encoded_value;
+
+            int sum = 0;
+            int cnt = 0;
+            for(int i = 0; i < left.size(); i++) {
+
+                if(i % m_frequency == 0 && i != 0) {
+                    double avg = sum / cnt;
+                    this->m = getIdealM(avg);
+                    sum = 0;
+                    cnt = 0;
+                    cout << "new m: " << this->m << endl;
+                }
+
+                if(i < 3) {
+                    encoded_value = g.encodeInteger(left[i], m);
+                    l.push_back(left[i]);
+                    sum += abs(left[i]);
+                    encoded_value += g.encodeInteger(right[i], m);
+                    r.push_back(right[i]);
+                    sum += abs(right[i]);
+                } else {
+                    short pl = predictor(left[i-3], left[i-2], left[i-1]);
+                    short pr = predictor(right[i-3], right[i-2], right[i-1]);
+                    encoded_value = g.encodeInteger(left[i] - pl, m);
+                    l.push_back(left[i] - pl);
+                    sum += abs(left[i] - pl);
+                    encoded_value += g.encodeInteger(right[i] - pr, m);
+                    r.push_back(right[i] - pr);
+                    idealm_r.push_back(right[i] - pr);
+                    sum += abs(right[i] - pr);
+                }
+
+                cnt++;
+
+                int encoded[encoded_value.size()];
+                for(int j = 0; j < encoded_value.size(); j++) {
+                    encoded[j] = encoded_value[j] - '0';
+                }
+                bit_stream.writeNBits(encoded, encoded_value.size());
+
+            }
+
+            bit_stream.close();
+
+
+
+
+
+            
+
+
+
+            //encode prediction array
+            // vector<short> prediction = predictor();
+            // cout<<"prediction size: "<<prediction.size()<<endl;
+            // string encoded_data;
+            // for (int i = 0; i < prediction.size(); i++){
+                
+            //     encoded_data = (g->encodeInteger(samples[i]-prediction[i],m));
+            //     int encoded_d[encoded_data.size()];
+            //     for (int i = 0; i < encoded_data.size(); i++)
+            //     {
+            //         encoded_d[i]=int(encoded_data[i])-'0';
+            //     }
+                
+            //     b.writeNBits(encoded_d,encoded_data.size());
+            // }
+
+
             cout << "Compressing finished" << endl;
             return 0;
         }
 
+        short predictor(short sample1, short sample2, short sample3) {
+            return 3*sample3 - 3*sample2 + sample1;
+        }
+
+        int getIdealM(double avg){
+            double alfa = avg / (avg + 1);
+            return ceil(-1/log2(alfa));
+        }
+
     
-        // decompress the given audio file
-        bool decompress()
-        {
+        // // decompress the given audio file
+        // bool decompress()
+        // {
 
-            Golomb golomb;
+        //     Golomb golomb;
 
-            int m_frequency = 50;
+        //     int m_frequency = 50;
             
-            int m = 4;
-            golomb.createPossibleBinaryTable(m);
+        //     int m = 4;
+        //     golomb.createPossibleBinaryTable(m);
 
-            // reading bits from encoded file
-            bitstream bit_stream(fileName, "r");
+        //     // reading bits from encoded file
+        //     bitstream bit_stream(fileName, "r");
 
-            // read file and store it in a string variable
-            // ofstream ofs("decode_file");
-            string bits_string = "";
-            int bit;
-            while((bit = bit_stream.readBit()) != EOF) {
-                // ofs << bit << endl;
-                bits_string += to_string(bit);
-            }
-            cout << "Calculated" << endl;
+        //     // read file and store it in a string variable
+        //     // ofstream ofs("decode_file");
+        //     string bits_string = "";
+        //     int bit;
+        //     while((bit = bit_stream.readBit()) != EOF) {
+        //         // ofs << bit << endl;
+        //         bits_string += to_string(bit);
+        //     }
+        //     cout << "Calculated" << endl;
 
-            int idx = 0;                            // keeps track of where we are on the string
-            bool residual_bits_flag = false;
+        //     int idx = 0;                            // keeps track of where we are on the string
+        //     bool residual_bits_flag = false;
             
          
 
-            int num_decoded_values = 0;
+        //     int num_decoded_values = 0;
 
          
             
   
 
-            int num_bgr_decoded = 0;
+        //     int num_bgr_decoded = 0;
 
 
-            while(idx < bits_string.length()-1 && !residual_bits_flag) {
-                // calculate new optimal m parameter
-                // if(num_bgr_decoded == m_frequency) {
-                //     golomb.createPossibleBinaryTable(m);
+        //     while(idx < bits_string.length()-1 && !residual_bits_flag) {
+        //         // calculate new optimal m parameter
+        //         // if(num_bgr_decoded == m_frequency) {
+        //         //     golomb.createPossibleBinaryTable(m);
 
-                //     while(!b.empty()) {
-                //         b.pop_back();
-                //     }
-                //     while(!g.empty()) {
-                //         g.pop_back();
-                //     }
-                //     while(!r.empty()) {
-                //         r.pop_back();
-                //     }
-                //     num_bgr_decoded = 0;
-                // }
+        //         //     while(!b.empty()) {
+        //         //         b.pop_back();
+        //         //     }
+        //         //     while(!g.empty()) {
+        //         //         g.pop_back();
+        //         //     }
+        //         //     while(!r.empty()) {
+        //         //         r.pop_back();
+        //         //     }
+        //         //     num_bgr_decoded = 0;
+        //         // }
 
-                if(bits_string.length() - idx < 8) {
-                    int cntr_residual = 0;
-                    for(int i = idx; i < bits_string.length(); i++) {
-                        if(bits_string[i] == '1')
-                            cntr_residual++;
-                    }
-                    if(cntr_residual > 0)
-                        residual_bits_flag = true;
+        //         if(bits_string.length() - idx < 8) {
+        //             int cntr_residual = 0;
+        //             for(int i = idx; i < bits_string.length(); i++) {
+        //                 if(bits_string[i] == '1')
+        //                     cntr_residual++;
+        //             }
+        //             if(cntr_residual > 0)
+        //                 residual_bits_flag = true;
 
-                }
+        //         }
 
-                if(!residual_bits_flag) {
-                    // read unary string
-                    char value;
-                    string unary = "";
-                    while((value = bits_string[idx]) != '0') {
-                        unary += value;
-                        idx++;
-                    }
+        //         if(!residual_bits_flag) {
+        //             // read unary string
+        //             char value;
+        //             string unary = "";
+        //             while((value = bits_string[idx]) != '0') {
+        //                 unary += value;
+        //                 idx++;
+        //             }
 
-                    //separator bit '0'
-                    idx++;
+        //             //separator bit '0'
+        //             idx++;
 
-                    // read the binary part
-                    map<int, string> table = golomb.getTable();    // get table of possible binary values
-                    string binary = "";
+        //             // read the binary part
+        //             map<int, string> table = golomb.getTable();    // get table of possible binary values
+        //             string binary = "";
                     
-                    // while value not in table keep reading
-                    bool not_in_table = true;
-                    while(not_in_table) {
-                        binary += bits_string[idx++];
-                        for(auto &v : table) {
-                            if(v.second == binary) {
-                                not_in_table = false;
-                            }
-                        }
-                    }
+        //             // while value not in table keep reading
+        //             bool not_in_table = true;
+        //             while(not_in_table) {
+        //                 binary += bits_string[idx++];
+        //                 for(auto &v : table) {
+        //                     if(v.second == binary) {
+        //                         not_in_table = false;
+        //                     }
+        //                 }
+        //             }
 
-                    // while value still in table
-                    bool in_table = true;
-                    while(in_table) {
-                        string tmp = binary + bits_string[idx];
-                        int counter = 0;                            // increments when value is on table
-                        for(auto &v : table) {
-                            if(v.second == tmp) {
-                                counter++;
-                            }
-                        }
-                        if(counter == 0) {                          // if not in table
-                            in_table = false;
-                        } else {
-                            binary += bits_string[idx++];
-                        }
-                    }
+        //             // while value still in table
+        //             bool in_table = true;
+        //             while(in_table) {
+        //                 string tmp = binary + bits_string[idx];
+        //                 int counter = 0;                            // increments when value is on table
+        //                 for(auto &v : table) {
+        //                     if(v.second == tmp) {
+        //                         counter++;
+        //                     }
+        //                 }
+        //                 if(counter == 0) {                          // if not in table
+        //                     in_table = false;
+        //                 } else {
+        //                     binary += bits_string[idx++];
+        //                 }
+        //             }
 
-                    // signal bit
-                    char signal_bit = bits_string[idx++];
+        //             // signal bit
+        //             char signal_bit = bits_string[idx++];
 
-                    int res = golomb.decodeInteger(unary + "0" + binary + signal_bit, m);
+        //             int res = golomb.decodeInteger(unary + "0" + binary + signal_bit, m);
 
-                    if(num_decoded_values == 0) {
-                        m = res;
-                        golomb.createPossibleBinaryTable(m);
-                    } else if(num_decoded_values == 1) {
-                        rows = res;
-                    } else if(num_decoded_values == 2) {
-                        cols = res;
-                        new_image.create(rows, cols, CV_8UC3);
-                    } else {
+        //             if(num_decoded_values == 0) {
+        //                 m = res;
+        //                 golomb.createPossibleBinaryTable(m);
+        //             } else if(num_decoded_values == 1) {
+        //                 rows = res;
+        //             } else if(num_decoded_values == 2) {
+        //                 cols = res;
+        //                 new_image.create(rows, cols, CV_8UC3);
+        //             } else {
 
-                        // se estiver na primeira linha ou primeira coluna
-                        if(current_row == 0 || current_col == 0) {
-                            if(num_decoded_values % 3 == 0) {
-                                b.push_back((abs(res)));
-                                new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res);
-                            } else if(num_decoded_values % 3 == 1) {
-                                g.push_back((abs(res)));
-                                new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res);
-                            } else if(num_decoded_values % 3 == 2) {
-                                r.push_back((abs(res)));
-                                new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res);
+        //                 // se estiver na primeira linha ou primeira coluna
+        //                 if(current_row == 0 || current_col == 0) {
+        //                     if(num_decoded_values % 3 == 0) {
+        //                         b.push_back((abs(res)));
+        //                         new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res);
+        //                     } else if(num_decoded_values % 3 == 1) {
+        //                         g.push_back((abs(res)));
+        //                         new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res);
+        //                     } else if(num_decoded_values % 3 == 2) {
+        //                         r.push_back((abs(res)));
+        //                         new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res);
                                 
-                                num_bgr_decoded++;
+        //                         num_bgr_decoded++;
 
-                                current_col++;
-                                if(current_col == cols) {
-                                    current_row++;
-                                    current_col = 0;
-                                }
-                            }
-                        } else {
-                            if(num_decoded_values % 3 == 0) {
-                                b.push_back((abs(res)));
-                                new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[0], new_image.at<Vec3b>(current_row-1, current_col)[0], new_image.at<Vec3b>(current_row-1, current_col-1)[0]));
-                            } else if(num_decoded_values % 3 == 1) {
-                                g.push_back((abs(res )));
-                                new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[1], new_image.at<Vec3b>(current_row-1, current_col)[1], new_image.at<Vec3b>(current_row-1, current_col-1)[1]));
-                            } else if(num_decoded_values % 3 == 2) {
-                                r.push_back((abs(res )));
-                                new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[2], new_image.at<Vec3b>(current_row-1, current_col)[2], new_image.at<Vec3b>(current_row-1, current_col-1)[2]));
+        //                         current_col++;
+        //                         if(current_col == cols) {
+        //                             current_row++;
+        //                             current_col = 0;
+        //                         }
+        //                     }
+        //                 } else {
+        //                     if(num_decoded_values % 3 == 0) {
+        //                         b.push_back((abs(res)));
+        //                         new_image.at<Vec3b>(current_row, current_col)[0] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[0], new_image.at<Vec3b>(current_row-1, current_col)[0], new_image.at<Vec3b>(current_row-1, current_col-1)[0]));
+        //                     } else if(num_decoded_values % 3 == 1) {
+        //                         g.push_back((abs(res )));
+        //                         new_image.at<Vec3b>(current_row, current_col)[1] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[1], new_image.at<Vec3b>(current_row-1, current_col)[1], new_image.at<Vec3b>(current_row-1, current_col-1)[1]));
+        //                     } else if(num_decoded_values % 3 == 2) {
+        //                         r.push_back((abs(res )));
+        //                         new_image.at<Vec3b>(current_row, current_col)[2] = u_char(res + predictorJPEG(new_image.at<Vec3b>(current_row, current_col-1)[2], new_image.at<Vec3b>(current_row-1, current_col)[2], new_image.at<Vec3b>(current_row-1, current_col-1)[2]));
                                 
-                                num_bgr_decoded++;
+        //                         num_bgr_decoded++;
 
-                                current_col++;
-                                if(current_col == cols) {
-                                    current_row++;
-                                    current_col = 0;
-                                }
-                            }
+        //                         current_col++;
+        //                         if(current_col == cols) {
+        //                             current_row++;
+        //                             current_col = 0;
+        //                         }
+        //                     }
 
-                        }
+        //                 }
 
-                    }
-                    num_decoded_values++;
-                }
+        //             }
+        //             num_decoded_values++;
+        //         }
 
                                
-            }
+        //     }
 
             // cout << "Decompressing...." << endl;
             // if(mode) return 1;
@@ -339,7 +461,7 @@ class AudioCodec {
             // // output_audio.save("output.wav");
             // // cout << "Decompressing finished with no errors" << endl;
             // return 0;
-        }
+        // }
 
 };
             // // keeping track of previous sample values for predictors
