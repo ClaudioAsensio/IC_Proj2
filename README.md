@@ -43,7 +43,8 @@ criar histograma: ./sndfile-example-bin/wav_hist quantized_sample 0 >> quantized
 ---
 
 - Exercício 4 e 5:
-Dentro da pasta src executar
+
+Dentro da pasta src executar:
 ```shell
 ./audio_codec 
 ```
