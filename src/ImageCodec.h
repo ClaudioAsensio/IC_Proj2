@@ -19,7 +19,7 @@ class ImageCodec {
 
     public:
 
-        void encodeImage(Mat image) {
+        void encodeImage(Mat image, string output_file) {
 
 
             Golomb golomb;
@@ -48,7 +48,7 @@ class ImageCodec {
 
             golomb.createPossibleBinaryTable(m);
 
-            bitstream bit_stream("output_file", "w");
+            bitstream bit_stream(output_file, "w");
             // encode m
             string encoded_m = golomb.encodeInteger(m, 4);
             int enc_m[encoded_m.length()];
@@ -133,7 +133,7 @@ class ImageCodec {
         }
 
 
-        void decodeImage(string filename) {
+        void decodeImage(string filename, string output_file) {
             Golomb golomb;
 
             int m_frequency = 30;
@@ -312,7 +312,7 @@ class ImageCodec {
             }
 
             cout << "Writing image" << endl;
-            imwrite("new_image.ppm", new_image);
+            imwrite(output_file, new_image);
 
             cout << "Finished decoding" << endl;
         }

@@ -19,7 +19,8 @@ int main(int argc, char const *argv[])
             cout << "Could not open or find the image" << endl;
             exit(-1);
         }
-        codec.encodeImage(image);
+        string output_file = argv[3];
+        codec.encodeImage(image, output_file);
         
         // get argv[2] file size in bits
         ifstream file(argv[2], ios::binary | ios::ate);
@@ -28,7 +29,7 @@ int main(int argc, char const *argv[])
         cout << "Original file size: " << size << " bytes" << endl;
 
         // get output_file file size in bits
-        ifstream file2("output_file", ios::binary | ios::ate);
+        ifstream file2(output_file, ios::binary | ios::ate);
         streamsize size2 = file2.tellg();
         file2.close();
         cout << "Encoded file size: " << size2 << " bytes" << endl;
@@ -41,7 +42,8 @@ int main(int argc, char const *argv[])
     } else if (strcmp(argv[1], "-d") == 0) {
         cout << "Starting to decode..." << endl;
         string filename = argv[2];
-        codec.decodeImage(filename);
+        string output_file = argv[3];
+        codec.decodeImage(filename, output_file);
         ifstream file3(filename, ios::binary | ios::ate);
         streamsize size3 = file3.tellg();
         file3.close();
