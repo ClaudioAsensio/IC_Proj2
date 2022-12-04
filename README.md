@@ -35,9 +35,8 @@ make clean                      # limpar programas de execução
 
 - Exercício 3:
 ```shell
-./sndfile-example-bin/wav_quant ../sample.wav 0 quantized_sample.wav
-
-criar histograma: ./sndfile-example-bin/wav_hist quantized_sample 0 >> quantized_sample.txt
+../bin/testGolomb -e <num-to-encode> -m <m-parameter>             # Codificar um inteiro em código Golomb com um dado m
+../bin/testGolomb -d <bin-string-to-decode> -m <m-parameter>      # Descodificar uma string binária para um número inteiro com um dado m
 
 ```
 ---
@@ -58,9 +57,9 @@ Na pasta src do repositorio encontram-se alguns audios para teste
 - Exercício 6:
 
 ```shell
-No diretório sndfile-example-src:
-../sndfile-example-bin/wav_effects sample.wav left_mute.wav mute           # efeito de silenciar canal
-../sndfile-example-bin/wav_effects sample.wav echo-output.wav single-echo  # efeito de single echo
+No diretório src:
+../bin/test_image_codec -e input_file output_file      # compress file
+../bin/test_image_codec -d compressed_file output_file # decompress file
 
 ```
 -----
