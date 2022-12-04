@@ -384,17 +384,21 @@ class AudioCodec {
                     if(num_decoded_values < 4) {  //header
                         if (num_decoded_values == 0) {
                             //decode but use pointer to get the value
+                            // res = golomb.decodeInteger2(unary,binary,signal_bit_str, 100);
+                            // res = golomb.decodeInteger(unary,binary,signal_bit_str,100);
                             res = golomb.decodeInteger(unary + "0" + binary + signal_bit, 100);
                             this->m = res;
                             // cout<<"m:"<<unary + "0" + binary + signal_bit<<endl;
                             // cout<<"decoded m"<<m<<endl;
                         } else if (num_decoded_values == 1) {
                             res = golomb.decodeInteger(unary + "0" + binary + signal_bit, 100);
+                            // res = golomb.decodeInteger2(unary,binary,signal_bit_str, 100);
                             // cout<<"channels"<<unary + "0" + binary + signal_bit<<endl;
                             channels = res;
                             // cout<<"decoded channels"<<endl;
                         } else if (num_decoded_values == 2) {
                             res = golomb.decodeInteger(unary + "0" + binary + signal_bit, 100);
+                            // res = golomb.decodeInteger2(unary,binary,signal_bit_str, 100);
                             sample_rate = res;
                             // cout<<"sample rate"<<unary + "0" + binary + signal_bit<<endl;
                             // cout<<"decoded sample rate"<<endl;
@@ -402,6 +406,7 @@ class AudioCodec {
                             sndFile2 = SndfileHandle(output_file+".wav", SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_PCM_16 , channels, sample_rate);
                         } else if (num_decoded_values == 3) {
                             res = golomb.decodeInteger(unary + "0" + binary + signal_bit, 100);
+                            // res = golomb.decodeInteger2(unary,binary,signal_bit_str, 100);
                             nframes = res;
                             std::cout<<"Decoded header"<<std::endl;   
                             
@@ -410,6 +415,7 @@ class AudioCodec {
                         
                     } else if (num_decoded_values <10 ) {
                         res = golomb.decodeInteger(unary + "0" + binary + signal_bit, this->m);
+                        // res = golomb.decodeInteger2(unary,binary,signal_bit_str, this->m);
                         if(num_decoded_values % 2 == 0) {
                             l.push_back(res); //first 3 values
                             // cout<<"l:"<<unary + "0" + binary + signal_bit<<endl;
@@ -425,6 +431,7 @@ class AudioCodec {
                     }
                     else {
                         res = golomb.decodeInteger(unary + "0" + binary + signal_bit, this->m);
+                        // res = golomb.decodeInteger2(unary,binary,signal_bit_str, this->m);
                         int L;
                         int R;
                         if(num_decoded_values % 2 == 0) {
@@ -527,7 +534,7 @@ class AudioCodec {
                 return ceil(-1/log2(alfa));
             }
             else {
-                return 2;
+                return 1;
             }
             
         }
