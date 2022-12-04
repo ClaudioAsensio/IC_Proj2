@@ -47,11 +47,11 @@ Dentro da pasta src executar
 ```shell
 ./audio_codec 
 ```
-```
-Ao executar,serão feitas as perguntas ao utiliador por forma a escolher qual o audio que deseja que seja comprimido e descomprimido,bem como a opção de ser lossy ou não
-O ficheiro comprimido fica em "FileCompressed.bin" e o descomprimido em "decoded.wav"
+
+Ao executar,serão feitas as perguntas ao utiliador por forma a escolher qual o audio que deseja que seja comprimido e descomprimido,bem como a opção de ser lossy ou não.
+O ficheiro comprimido fica em "FileCompressed.bin" e o descomprimido em "decoded.wav".
 Na pasta src do repositorio encontram-se alguns audios para teste
-´´´
+
 ---
 
 - Exercício 6:
