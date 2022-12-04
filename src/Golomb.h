@@ -142,8 +142,8 @@ class Golomb {
             // std::cout << "Remaining bits: " << remaining_codeword_bits << std::endl;
 
             // read the binary part
-            createPossibleBinaryTable(m);
-            std::map<int, std::string> table = getTable();    // get table of possible binary values
+            // createPossibleBinaryTable(m);
+            // std::map<int, std::string> table = getTable();    // get table of possible binary values
             
             std::string binary = "";
             for(int i = 0; i < remaining_codeword_bits; i++) {
