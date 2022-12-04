@@ -21,6 +21,7 @@ class ImageCodec {
 
         void encodeImage(Mat image) {
 
+
             Golomb golomb;
 
             int m_frequency = 30;
@@ -127,6 +128,8 @@ class ImageCodec {
                 }
             }
             bit_stream.close();
+
+
         }
 
 
@@ -188,13 +191,14 @@ class ImageCodec {
                     num_bgr_decoded = 0;
                 }
 
+                // detect if the missing bits are the ones used to fill the last byte when writing in the binary file                
                 if(bits_string.length() - idx < 8) {
                     int cntr_residual = 0;
                     for(int i = idx; i < bits_string.length(); i++) {
                         if(bits_string[i] == '1')
                             cntr_residual++;
                     }
-                    if(cntr_residual > 0)
+                    if(cntr_residual == 0)
                         residual_bits_flag = true;
 
                 }
